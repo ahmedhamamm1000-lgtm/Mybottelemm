@@ -1,0 +1,59 @@
+herename: Ahmed Hamam Daily Bot
+on:
+  schedule:
+    - cron: '0 7 * * *'  # 9 صباحاً بتوقيت مصر
+    - cron: '0 14 * * *' # 4 عصراً بتوقيت مصر
+    - cron: '0 22 * * *' # 12 مساءً بتوقيت مصر
+  workflow_dispatch:     # هذا السطر ليظهر لك زر التشغيل اليدوي
+
+jobs:
+  broadcast:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Daily Messages
+        shell: bash
+        run: |
+          TOKEN="8547376425:AAGHy5gDX7gaNI9c9r2L4mdvvu7YxIObyEk"
+          CHANNEL="@AhmedMods2"
+          HEADER="🤲 <b>ادعوا لأحمد همام</b>"
+          
+          # تحديد الساعة الحالية
+          HOUR=$(date +%H)
+          
+          if [ "$HOUR" == "07" ]; then
+            # ورد الصباح (20 رسالة)
+            for i in {1..20}; do
+              RES=$(curl -s "https://api.aladhan.com/v1/ayah/random/ar.alafasy")
+              TXT=$(echo $RES | jq -r '.data.text')
+              SUR=$(echo $RES | jq -r '.data.surah.name')
+              if [ "$TXT" != "null" ]; then
+                curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
+                -d "chat_id=$CHANNEL" -d "parse_mode=HTML" \
+                -d "text=$HEADER%0A%0A☀️ <b>ورد الصباح ($i/20)</b>%0A%0A$TXT%0A%0A📖 سورة: $SUR"
+                sleep 2
+              fi
+            done
+
+          elif [ "$HOUR" == "14" ]; then
+            # ورد العصر (10 رسائل)
+            for i in {1..10}; do
+              RES=$(curl -s "https://api.aladhan.com/v1/ayah/random/ar.alafasy")
+              TXT=$(echo $RES | jq -r '.data.text')
+              if [ "$TXT" != "null" ]; then
+                curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
+                -d "chat_id=$CHANNEL" -d "parse_mode=HTML" \
+                -d "text=$HEADER%0A%0A🌤️ <b>ورد العصر ($i/10)</b>%0A%0A$TXT"
+                sleep 2
+              fi
+            done
+
+          else
+            # ورد المساء (أذكار عشوائية عند التشغيل اليدوي الآن)
+            ADKAR=("سُبْحَانَ اللَّهِ وَبِحَمْدِهِ" "أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ" "لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ" "سُبْحَانَ اللَّهِ الْعَظِيمِ" "اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ")
+            for msg in "${ADKAR[@]}"; do
+              curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
+              -d "chat_id=$CHANNEL" -d "parse_mode=HTML" \
+              -d "text=$HEADER%0A%0A🌙 <b>من أذكار المساء</b>%0A%0A$msg"
+              sleep 2
+            done
+          fi
